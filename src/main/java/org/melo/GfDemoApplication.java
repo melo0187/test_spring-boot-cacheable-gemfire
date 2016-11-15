@@ -1,6 +1,7 @@
 package org.melo;
 
 import com.gemstone.gemfire.cache.client.ClientRegionShortcut;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.gemfire.client.ClientCacheFactoryBean;
 import org.springframework.data.gemfire.client.ClientRegionFactoryBean;
 import org.springframework.data.gemfire.client.PoolFactoryBean;
+import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
 import org.springframework.data.gemfire.support.ConnectionEndpoint;
 import org.springframework.data.gemfire.support.GemfireCacheManager;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +28,7 @@ import java.util.Properties;
 @SpringBootApplication
 @Configuration
 @EnableCaching
+@EnableGemfireRepositories
 @RestController
 @RequestMapping("/values")
 @SuppressWarnings("unused")
@@ -33,9 +36,13 @@ public class GfDemoApplication {
 
 	private static HashMap<String, String> values;
 
+	@Autowired
+	private GfDemoService service;
+
 	public static void main(String[] args) {
 
 		values = new HashMap<>();
+
 		SpringApplication.run(GfDemoApplication.class, args);
 
 	}
@@ -103,8 +110,12 @@ public class GfDemoApplication {
 	@RequestMapping(method = RequestMethod.POST)
 	public String set_cache(@RequestParam(value="key") String key, @RequestParam(value="value") String value){
 		System.out.println(String.format("Called to set key %1$s with value %2$s", key, value));
-		values.put(key, value);
-		return value;
+		/*values.put(key, value);
+		return value;*/
+		GfDemoEntity entity = new GfDemoEntity();
+		entity.key = key;
+		entity.value = value;
+		return service.save(entity);
 	}
 
 	@Cacheable(cacheNames = "Values", key="#key")
