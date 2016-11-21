@@ -110,18 +110,27 @@ public class GfDemoApplication {
 	@RequestMapping(method = RequestMethod.POST)
 	public String set_cache(@RequestParam(value="key") String key, @RequestParam(value="value") String value){
 		System.out.println(String.format("Called to set key %1$s with value %2$s", key, value));
-		/*values.put(key, value);
-		return value;*/
+		values.put(key, value);
+		return value;
+	}
+
+	@Cacheable(cacheNames = "Values", key="#key")
+	@RequestMapping(method = RequestMethod.GET)
+	public String get_cache(@RequestParam(value="key") String key){
+		System.out.println(String.format("Called to get key %1$s", key));
+		return values.get(key) == null ? "Unknown key!" : values.get(key);
+	}
+
+	@RequestMapping(path = "/repo", method = RequestMethod.POST)
+	public String save(@RequestParam(value = "key") String key, @RequestParam(value = "value") String value){
 		GfDemoEntity entity = new GfDemoEntity();
 		entity.key = key;
 		entity.value = value;
 		return service.save(entity);
 	}
 
-	@Cacheable(cacheNames = "Values", key="#key")
-	@RequestMapping(method = RequestMethod.GET)
-	public String get_cache(@RequestParam(value="id") String key){
-		System.out.println(String.format("Called to get key %1$s", key));
-		return values.get(key) == null ? "Unknown key!" : values.get(key);
+	@RequestMapping(path = "/repo", method = RequestMethod.GET)
+	public String getByKey(@RequestParam(value = "key") String key){
+		return service.getByKey(key);
 	}
 }

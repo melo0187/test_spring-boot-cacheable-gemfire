@@ -20,4 +20,8 @@ public class GfDemoService {
         return repo.save(entity).toString();
 
     }
+
+    public String getByKey(String key) {
+        return repo.findByKey(key).get().getValue();
+    }
 }
