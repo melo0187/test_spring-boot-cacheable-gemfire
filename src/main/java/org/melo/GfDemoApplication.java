@@ -1,5 +1,8 @@
 package org.melo;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.gemstone.gemfire.cache.client.ClientRegionShortcut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,13 +19,12 @@ import org.springframework.data.gemfire.client.PoolFactoryBean;
 import org.springframework.data.gemfire.repository.config.EnableGemfireRepositories;
 import org.springframework.data.gemfire.support.ConnectionEndpoint;
 import org.springframework.data.gemfire.support.GemfireCacheManager;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Properties;
 
 @SpringBootApplication
@@ -76,18 +78,6 @@ public class GfDemoApplication {
 		return gemfireCache;
 	}
 
-	@Bean(name = "Values")
-	ClientRegionFactoryBean<String, String> valuesRegion(ClientCacheFactoryBean gemfireCache, PoolFactoryBean gemfirePool) throws Exception {
-		ClientRegionFactoryBean<String, String> valuesRegion = new ClientRegionFactoryBean<>();
-
-		valuesRegion.setCache(gemfireCache.getObject());
-		valuesRegion.setName("Values");
-		valuesRegion.setPool(gemfirePool.getPool());
-		valuesRegion.setShortcut(ClientRegionShortcut.PROXY);
-
-		return valuesRegion;
-	}
-
 	@Bean
 	GemfireCacheManager cacheManager(ClientCacheFactoryBean gemfireCache) throws Exception {
 		GemfireCacheManager cacheManager = new GemfireCacheManager();
@@ -106,6 +96,30 @@ public class GfDemoApplication {
 	// used specifically in Spring's Cache Abstraction
 	*/
 
+	@Bean(name = "Objects")
+	ClientRegionFactoryBean<String, GfDemoEntity> objectsRegion(ClientCacheFactoryBean gemfireCache, PoolFactoryBean gemfirePool) throws Exception {
+		ClientRegionFactoryBean<String, GfDemoEntity> objectsRegion = new ClientRegionFactoryBean<>();
+
+		objectsRegion.setCache(gemfireCache.getObject());
+		objectsRegion.setName("Objects");
+		objectsRegion.setPool(gemfirePool.getPool());
+		objectsRegion.setShortcut(ClientRegionShortcut.PROXY);
+
+		return objectsRegion;
+	}
+
+	@Bean(name = "Values")
+	ClientRegionFactoryBean<String, String> valuesRegion(ClientCacheFactoryBean gemfireCache, PoolFactoryBean gemfirePool) throws Exception {
+		ClientRegionFactoryBean<String, String> valuesRegion = new ClientRegionFactoryBean<>();
+
+		valuesRegion.setCache(gemfireCache.getObject());
+		valuesRegion.setName("Values");
+		valuesRegion.setPool(gemfirePool.getPool());
+		valuesRegion.setShortcut(ClientRegionShortcut.PROXY);
+
+		return valuesRegion;
+	}
+
 	@CachePut(cacheNames = "Values", key="#key")
 	@RequestMapping(method = RequestMethod.POST)
 	public String set_cache(@RequestParam(value="key") String key, @RequestParam(value="value") String value){
@@ -122,15 +136,20 @@ public class GfDemoApplication {
 	}
 
 	@RequestMapping(path = "/repo", method = RequestMethod.POST)
-	public String save(@RequestParam(value = "key") String key, @RequestParam(value = "value") String value){
+	@ResponseStatus(HttpStatus.CREATED)
+	public void save(@RequestParam(value = "key") String key, @RequestParam(value = "value") String value){
 		GfDemoEntity entity = new GfDemoEntity();
 		entity.key = key;
 		entity.value = value;
-		return service.save(entity);
+		service.save(entity);
 	}
 
 	@RequestMapping(path = "/repo", method = RequestMethod.GET)
-	public String getByKey(@RequestParam(value = "key") String key){
-		return service.getByKey(key);
+	public String getByKey(@RequestParam(value = "key") String key) throws JsonProcessingException {
+		Optional<GfDemoEntity> result = service.getByKey(key);
+
+		ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+
+		return result.isPresent() ? ow.writeValueAsString(result.get()) : "No Object found";
 	}
 }

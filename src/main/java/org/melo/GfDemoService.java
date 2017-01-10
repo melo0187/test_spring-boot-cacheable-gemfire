@@ -3,6 +3,8 @@ package org.melo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /**
  * Created by CSCOLLO on 15.11.2016.
  */
@@ -16,12 +18,12 @@ public class GfDemoService {
         this.repo = repo;
     }
 
-    public String save(GfDemoEntity entity) {
-        return repo.save(entity).toString();
-
+    public void save(GfDemoEntity entity) {
+        repo.save(entity);
     }
 
-    public String getByKey(String key) {
-        return repo.findByKey(key).get().getValue();
+    public Optional<GfDemoEntity> getByKey(String key) {
+        Optional<GfDemoEntity> result = repo.findByKey(key);
+        return result;
     }
 }
